@@ -1028,6 +1028,7 @@ struct dentry *dsi_debugfs_create_dcs_cmd(const char *name, umode_t mode,
 #define DEBUGFS_CREATE_DCS_CMD(name, node, cmd, ctrl_cmd) \
 	dsi_debugfs_create_dcs_cmd(name, 0644, node, cmd, ctrl_cmd)
 
+#ifdef CONFIG_DEBUG_FS
 static int mdss_dsi_debugfs_setup(struct mdss_panel_data *pdata,
 			struct dentry *parent)
 {
@@ -1078,7 +1079,9 @@ static int mdss_dsi_debugfs_setup(struct mdss_panel_data *pdata,
 	ctrl_pdata->debugfs_info = dfs;
 	return 0;
 }
+#endif
 
+#ifdef CONFIG_DEBUG_FS
 static int mdss_dsi_debugfs_init(struct mdss_dsi_ctrl_pdata *ctrl_pdata)
 {
 	int rc;
@@ -1121,6 +1124,7 @@ static void mdss_dsi_debugfs_cleanup(struct mdss_dsi_ctrl_pdata *ctrl_pdata)
 	} while (pdata);
 	pr_debug("%s: Cleaned up mdss_dsi_debugfs_info\n", __func__);
 }
+#endif
 
 static int _mdss_dsi_refresh_cmd(struct buf_data *new_cmds,
 	struct dsi_panel_cmds *original_pcmds)
@@ -3114,8 +3118,9 @@ static int mdss_dsi_event_handler(struct mdss_panel_data *pdata,
 		rc = mdss_dsi_panel_timing_switch(ctrl_pdata, arg);
 		break;
 	case MDSS_EVENT_FB_REGISTERED:
+#ifdef CONFIG_DEBUG_FS
 		mdss_dsi_debugfs_init(ctrl_pdata);
-
+#endif
 		fbi = (struct fb_info *)arg;
 		if (!fbi || !fbi->dev)
 			break;
@@ -3136,6 +3141,14 @@ static int mdss_dsi_event_handler(struct mdss_panel_data *pdata,
 			queue_delayed_work(ctrl_pdata->workq,
 				&ctrl_pdata->dba_work, HZ);
 		}
+		break;
+	case MDSS_EVENT_PANEL_SET_HBM_MODE:
+		ctrl_pdata->hbm_mode = (int)(unsigned long) arg;
+		mdss_dsi_panel_set_hbm_mode(ctrl_pdata,
+		    (int)(unsigned long) ctrl_pdata->hbm_mode);
+		break;
+	case MDSS_EVENT_PANEL_GET_HBM_MODE:
+		rc = mdss_dsi_panel_get_hbm_mode(ctrl_pdata);
 		break;
 	case MDSS_EVENT_PANEL_SET_SRGB_MODE:
 		ctrl_pdata->srgb_mode = (int)(unsigned long) arg;
@@ -4305,7 +4318,9 @@ static int mdss_dsi_ctrl_remove(struct platform_device *pdev)
 	msm_dss_iounmap(&ctrl_pdata->mmss_misc_io);
 	msm_dss_iounmap(&ctrl_pdata->phy_io);
 	msm_dss_iounmap(&ctrl_pdata->ctrl_io);
+#ifdef CONFIG_DEBUG_FS
 	mdss_dsi_debugfs_cleanup(ctrl_pdata);
+#endif
 
 	if (ctrl_pdata->workq)
 		destroy_workqueue(ctrl_pdata->workq);
