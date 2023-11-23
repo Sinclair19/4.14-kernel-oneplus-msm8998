@@ -585,10 +585,6 @@ struct mdss_dsi_ctrl_pdata {
 
 	struct dsi_err_container err_cont;
 
-	struct dsi_panel_cmds hbm_on_cmds;
-	struct dsi_panel_cmds hbm_off_cmds;
-	int hbm_mode;
-
 	bool is_panel_on;
 	bool setting_mode_loaded;
 
@@ -615,6 +611,10 @@ struct mdss_dsi_ctrl_pdata {
 	int adaption_mode;
 	struct dsi_panel_cmds adaption_mode_on_cmds;
 	struct dsi_panel_cmds adaption_mode_off_cmds;
+
+	int hbm_mode;
+	struct dsi_panel_cmds hbm_on_cmds;
+	struct dsi_panel_cmds hbm_off_cmds;
 
 	bool bl_high2bit;
 	bool high_brightness_panel;
@@ -643,9 +643,6 @@ struct dsi_status_data {
 	struct msm_fb_data_type *mfd;
 };
 
-int mdss_dsi_panel_set_hbm_mode(struct mdss_dsi_ctrl_pdata *ctrl, int level);
-int mdss_dsi_panel_get_hbm_mode(struct mdss_dsi_ctrl_pdata *ctrl);
-
 int mdss_dsi_panel_set_srgb_mode(struct mdss_dsi_ctrl_pdata *ctrl, int level);
 int mdss_dsi_panel_get_srgb_mode(struct mdss_dsi_ctrl_pdata *ctrl);
 
@@ -663,6 +660,9 @@ int mdss_dsi_panel_get_oneplus_mode(struct mdss_dsi_ctrl_pdata *ctrl);
 
 int mdss_dsi_panel_set_adaption_mode(struct mdss_dsi_ctrl_pdata *ctrl, int level);
 int mdss_dsi_panel_get_adaption_mode(struct mdss_dsi_ctrl_pdata *ctrl);
+
+int mdss_dsi_panel_set_hbm_mode(struct mdss_dsi_ctrl_pdata *ctrl, int level);
+int mdss_dsi_panel_get_hbm_mode(struct mdss_dsi_ctrl_pdata *ctrl);
 
 void mdss_dsi_read_hw_revision(struct mdss_dsi_ctrl_pdata *ctrl);
 int dsi_panel_device_register(struct platform_device *ctrl_pdev,
