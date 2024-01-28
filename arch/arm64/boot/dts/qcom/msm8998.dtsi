@@ -46,7 +46,7 @@
 
 	chosen {
 		stdout-path = "serial0";
-		bootargs = "rcupdate.rcu_expedited=1 kpti=0";
+		bootargs = "rcupdate.rcu_expedited=1 kpti=0 rcu_nocbs=0-7 cgroup.memory=nokmem,nosocket";
 	};
 
 	cpus {
@@ -277,18 +277,18 @@
 		};
 	};
 
-       clocks {
-               xo_board {
-                       compatible = "fixed-clock";
-                       #clock-cells = <0>;
-                       clock-frequency = <19200000>;
-                       clock-output-names = "xo_board";
+	clocks {
+		xo_board {
+			compatible = "fixed-clock";
+			#clock-cells = <0>;
+			clock-frequency = <19200000>;
+			clock-output-names = "xo_board";
 		};
-               sleep_clk {
-                       compatible = "fixed-clock";
-                       #clock-cells = <1>;
-                       clock-frequency = <32764>;
-                       clock-output-names = "sleep_clk";
+		sleep_clk {
+			compatible = "fixed-clock";
+			#clock-cells = <1>;
+			clock-frequency = <32764>;
+			clock-output-names = "sleep_clk";
 		};
 	};
 
@@ -440,7 +440,7 @@
 			linux,cma-default;
 		};
 
-		cont_splash_mem: splash_region@9d600000 {
+		cont_splash_mem: cont_splash_region@9d600000 {
 			reg = <0x0 0x9d600000 0x0 0x02400000>;
 			label = "cont_splash_mem";
 		};
@@ -997,10 +997,10 @@
 		qcom,cpulist =	<&CPU0 &CPU1 &CPU2 &CPU3>;
 		qcom,target-dev = <&memlat_cpu0>;
 		qcom,core-dev-table =
-			<  300000 1525 >,
-			<  499200 3143 >,
-			< 1113600 4173 >,
-			< 1881600 5859 >;
+			<  300000 MHZ_TO_MBPS( 200,  8) >,
+			<  499200 MHZ_TO_MBPS( 412,  8) >,
+			< 1113600 MHZ_TO_MBPS( 547,  8) >,
+			< 1881600 MHZ_TO_MBPS( 768,  8) >;
 	};
 
 	devfreq_memlat_4: qcom,arm-memlat-mon-4 {
@@ -1008,23 +1008,23 @@
 		qcom,cpulist =	<&CPU4 &CPU5 &CPU6 &CPU7>;
 		qcom,target-dev = <&memlat_cpu4>;
 		qcom,core-dev-table =
-			<  300000  1525 >,
-			<  480000  3143 >,
-			<  900000  4173 >,
-			< 1017000  7759 >,
-			< 1296000  9887 >,
-			< 1555000 11863 >,
-			< 1804000 13763 >;
+			<  300000 MHZ_TO_MBPS( 200,  8) >,
+			<  480000 MHZ_TO_MBPS( 412,  8) >,
+			<  900000 MHZ_TO_MBPS( 547,  8) >,
+			< 1017000 MHZ_TO_MBPS( 1017, 8) >,
+			< 1296000 MHZ_TO_MBPS( 1296, 8) >,
+			< 1555000 MHZ_TO_MBPS( 1555, 8) >,
+			< 1804000 MHZ_TO_MBPS( 1804, 8) >;
 	};
 
 	devfreq_cpufreq: devfreq-cpufreq {
 		mincpubw-cpufreq {
 			target-dev = <&mincpubw>;
 			cpu-to-dev-map-0 =
-				< 1881600 1525 >;
+				< 1881600 MHZ_TO_MBPS( 200,  8) >;
 			cpu-to-dev-map-4 =
-				< 2016000 1525 >,
-				< 2092800 5195 >;
+				< 2016000 MHZ_TO_MBPS( 200,  8) >,
+				< 2092800 MHZ_TO_MBPS( 681,  8) >;
 		};
 	};
 
@@ -1119,10 +1119,6 @@
 		reg-names = "cc_base";
 		vdd_dig-supply = <&pm8998_s1_level>;
 		vdd_mmsscc_mx-supply = <&pm8998_s9_level>;
-		clock-names = "xo", "gpll0", "gpll0_div";
-		clocks = <&clock_rpmcc RPM_SMD_XO_CLK_SRC>,
-			 <&clock_gcc GCC_MMSS_GPLL0_CLK>,
-			 <&clock_gcc GCC_MMSS_GPLL0_DIV_CLK>;
 		#clock-cells = <1>;
 		#reset-cells = <1>;
 	};
@@ -1138,24 +1134,20 @@
 		compatible = "qcom,gpucc-early-msm8998";
 		reg = <0x5065000 0x9000>;
 		vdd_dig-supply = <&pm8998_s1_level>;
-		clock-names = "xo_ao", "gpll0";
-		clocks = <&clock_rpmcc RPM_SMD_XO_A_CLK_SRC>,
-			<&clock_gcc GCC_GPU_GPLL0_CLK>;
+		clock-names = "gpll0";
+		clocks = <&clock_gcc GCC_GPU_GPLL0_CLK>;
 		#clock-cells = <1>;
+		#reset-cells = <1>;
 	};
 
 	clock_gpu: qcom,gpucc@5065000 {
 		compatible = "qcom,gpucc-msm8998";
 		reg = <0x5065000 0x9000>;
-		vdd_dig-supply = <&pm8998_s1_level>;
 		vdd_gpucc-supply = <&gfx_vreg>;
 		vdd_mx-supply = <&pm8998_s9_level>;
-		vdd_gpu_mx-supply = <&pm8998_s9_level>;
 		qcom,gfx3d_clk_src-opp-handle = <&msm_gpu>;
-		clock-names = "xo_ao", "gpll0";
-		clocks = <&clock_rpmcc RPM_SMD_XO_A_CLK_SRC>,
-			<&clock_gcc GCC_GPU_GPLL0_CLK>;
 		#clock-cells = <1>;
+		#reset-cells = <1>;
 	};
 
 	clock_cpu: qcom,cpu-clock-8998@179c0000 {
@@ -2127,12 +2119,11 @@
 		memory-region = <&pil_adsp_mem>;
 
 		/* GPIO inputs from lpass */
-		interrupts-extended =
-				<&wakegic GIC_SPI 162 IRQ_TYPE_EDGE_RISING>,
-				<&adsp_smp2p_in 0 IRQ_TYPE_EDGE_RISING>,
-				<&adsp_smp2p_in 2 IRQ_TYPE_EDGE_RISING>,
-				<&adsp_smp2p_in 1 IRQ_TYPE_EDGE_RISING>,
-				<&adsp_smp2p_in 3 IRQ_TYPE_EDGE_RISING>;
+		interrupts-extended = <&wakegic 0 162 1>,
+				<&adsp_smp2p_in 0 0>,
+				<&adsp_smp2p_in 2 0>,
+				<&adsp_smp2p_in 1 0>,
+				<&adsp_smp2p_in 3 0>;
 
 		interrupt-names = "qcom,wdog",
 				"qcom,err-fatal",
@@ -2213,13 +2204,12 @@
 		qcom,serial-loading;
 
 		/* GPIO inputs from mss */
-		interrupts-extended =
-				<&wakegic GIC_SPI 448 IRQ_TYPE_EDGE_RISING>,
-				<&modem_smp2p_in 0 IRQ_TYPE_EDGE_RISING>,
-				<&modem_smp2p_in 1 IRQ_TYPE_EDGE_RISING>,
-				<&modem_smp2p_in 2 IRQ_TYPE_EDGE_RISING>,
-				<&modem_smp2p_in 3 IRQ_TYPE_EDGE_RISING>,
-				<&modem_smp2p_in 7 IRQ_TYPE_EDGE_RISING>;
+		interrupts-extended = <&wakegic 0 448 1>,
+				<&modem_smp2p_in 0 0>,
+				<&modem_smp2p_in 1 0>,
+				<&modem_smp2p_in 2 0>,
+				<&modem_smp2p_in 3 0>,
+				<&modem_smp2p_in 7 0>;
 
 		interrupt-names = "qcom,wdog",
 				"qcom,err-fatal",
@@ -2392,13 +2382,6 @@
 			<1 618 0 800>;	/* 100 MB/s */
 		clocks = <&clock_gcc GCC_PRNG_AHB_CLK>;
 		clock-names = "iface_clk";
-	};
-
-	lmh_lite: qcom,lmh {
-		compatible = "qcom,lmh_v1";
-		interrupts = <GIC_SPI 134 IRQ_TYPE_LEVEL_HIGH>;
-		#thermal-sensor-cells = <1>;
-		status="disabled";
 	};
 
 	pcie0: qcom,pcie@01c00000 {
@@ -2632,8 +2615,8 @@
 		qcom,bcl-enable;
 		qcom,bcl-framework-interface;
 		qcom,bcl-freq-control-list = <&CPU4 &CPU5 &CPU6 &CPU7>;
-		qcom,bcl-hotplug-list = <&CPU4 &CPU5 &CPU6 &CPU7>;
-		qcom,bcl-soc-hotplug-list = <&CPU4 &CPU5 &CPU6 &CPU7>;
+		qcom,bcl-hotplug-list = <>;
+		qcom,bcl-soc-hotplug-list = <>;
 		qcom,ibat-monitor {
 			qcom,low-threshold-uamp = <3400000>;
 			qcom,high-threshold-uamp = <4200000>;
@@ -2670,12 +2653,11 @@
 		memory-region = <&pil_slpi_mem>;
 
 		/* GPIO inputs from ssc */
-		interrupts-extended =
-				<&wakegic GIC_SPI 390 IRQ_TYPE_EDGE_RISING>,
-				<&slpi_smp2p_in 0 IRQ_TYPE_EDGE_RISING>,
-				<&slpi_smp2p_in 2 IRQ_TYPE_EDGE_RISING>,
-				<&slpi_smp2p_in 1 IRQ_TYPE_EDGE_RISING>,
-				<&slpi_smp2p_in 3 IRQ_TYPE_EDGE_RISING>;
+		interrupts-extended = <&wakegic 0 390 1>,
+				<&slpi_smp2p_in 0 0>,
+				<&slpi_smp2p_in 2 0>,
+				<&slpi_smp2p_in 1 0>,
+				<&slpi_smp2p_in 3 0>;
 
 		interrupt-names = "qcom,wdog",
 				"qcom,err-fatal",
@@ -3095,25 +3077,23 @@
 &clock_cpu {
 	#address-cells = <1>;
 	#size-cells = <1>;
-	lmh_dcvs0: qcom,limits-dcvs@0 {
+	lmh_dcvs0: qcom,limits-dcvs@179ce800 {
 		compatible = "qcom,msm-hw-limits";
 		interrupts = <GIC_SPI 37 IRQ_TYPE_LEVEL_HIGH>;
 		qcom,affinity = <0>;
-		reg = <0x17D78800 0x1000>,
-			<0x17D43000 0x1000>;
+		reg = <0x179ce800 0x1000>,
+			<0x179c1400 0x1000>;
 		#thermal-sensor-cells = <0>;
-		qcom,plat-mitigation-disable;
 		qcom,legacy-lmh-enable;
 	};
 
-	lmh_dcvs1: qcom,limits-dcvs@1 {
+	lmh_dcvs1: qcom,limits-dcvs@179cc800 {
 		compatible = "qcom,msm-hw-limits";
 		interrupts = <GIC_SPI 38 IRQ_TYPE_LEVEL_HIGH>;
 		qcom,affinity = <1>;
-		reg = <0x17D70800 0x1000>,
-			<0x17D45800 0x1000>;
+		reg = <0x179cc800 0x1000>,
+			<0x179c3400 0x1000>;
 		#thermal-sensor-cells = <0>;
-		qcom,plat-mitigation-disable;
 		qcom,legacy-lmh-enable;
 	};
 };
@@ -3223,43 +3203,6 @@
 #include "msm8998-audio.dtsi"
 #include "msm8998-sde.dtsi"
 #include "msm-smb138x.dtsi"
-
-&pmi8998_pdphy {
-	vbus-supply = <&smb2_vbus>;
-};
-
-&lab_regulator {
-	qcom,qpnp-lab-ps-threshold = <20>;
-};
-
-&bcl_sensor {
-	interrupts = <0x2 0x42 0x0 IRQ_TYPE_NONE>,
-		     <0x2 0x42 0x2 IRQ_TYPE_NONE>;
-	interrupt-names = "bcl-high-ibat",
-			  "bcl-low-vbat";
-	qcom,vbat-polling-delay-ms = <100>;
-	qcom,ibat-polling-delay-ms = <100>;
-};
-/*
-&pm8998_vadc {
-	qcom,adc-bit-resolution = <15>;
-};
-*/
-&pm8998_adc_tm {
-	qcom,adc-bit-resolution = <15>;
-};
-
-&pm8998_div_clk1 {
-	status = "disabled";
-};
-
-&pm8998_div_clk2 {
-	status = "disabled";
-};
-
-&pm8998_div_clk3 {
-	status = "disabled";
-};
 
 &spmi_bus {
 	qcom,pm8998@0 {
