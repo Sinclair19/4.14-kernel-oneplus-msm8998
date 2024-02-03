@@ -924,12 +924,6 @@ static void mdss_dsi_panel_bl_ctrl(struct mdss_panel_data *pdata,
 	if (pdata->panel_disable_mode && (bl_level != 0))
 		return;
 
-	/* do not allow backlight to change when DSI is in low power mode */
-	if (mdss_dsi_is_panel_on_lp(pdata)) {
-		pr_debug("Cannot control brightness in DSI low power mode");
-		return;
-	}
-
 	if ((bl_level < pdata->panel_info.bl_min) && (bl_level != 0))
 		bl_level = pdata->panel_info.bl_min;
 
@@ -983,11 +977,6 @@ int mdss_dsi_panel_set_panel_mode(struct dsi_panel_cmds *on_cmd, struct dsi_pane
 {
 	struct dsi_panel_cmds *cmd;
 	int ret = 0;
-
-	if (mdss_dsi_is_panel_on_lp(&ctrl->panel_data)) {
-		pr_err("Cannot change panel mode in DSI low power mode");
-		return -1;
-	}
 
 	mutex_lock(&ctrl->panel_mode_lock);
 	if (!ctrl->is_panel_on) {

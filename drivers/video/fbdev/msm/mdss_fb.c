@@ -84,8 +84,6 @@
 static struct fb_info *fbi_list[MAX_FBI_LIST];
 static int fbi_list_index;
 
-static bool fb_reset_needed = false;
-
 static u32 mdss_fb_pseudo_palette[16] = {
 	0x00000000, 0xffffffff, 0xffffffff, 0xffffffff,
 	0xffffffff, 0xffffffff, 0xffffffff, 0xffffffff,
@@ -1687,8 +1685,6 @@ static int mdss_fb_probe(struct platform_device *pdev)
 
 	INIT_DELAYED_WORK(&mfd->idle_notify_work, __mdss_fb_idle_notify_work);
 
-	fb_reset_needed = (mfd->mdp.mdp_danger_status == 0) ? false : true;
-
 	return rc;
 }
 
@@ -2009,8 +2005,7 @@ void mdss_fb_set_backlight(struct msm_fb_data_type *mfd, u32 bkl_lvl)
 	bool bl_notify_needed = false;
 	bool twm_en = false;
 
-	if (((((mdss_fb_is_power_off(mfd) || mdss_fb_is_power_on_lp(mfd))
-		&& mfd->dcm_state != DCM_ENTER)
+	if ((((mdss_fb_is_power_off(mfd) && mfd->dcm_state != DCM_ENTER)
 		|| !mfd->allow_bl_update) && !IS_CALIB_MODE_BL(mfd)) ||
 		mfd->panel_info->cont_splash_enabled) {
 		mfd->unset_bl_level = bkl_lvl;
@@ -2187,7 +2182,7 @@ static int mdss_fb_blank_blank(struct msm_fb_data_type *mfd,
 	if (!mfd)
 		return -EINVAL;
 
-	if (!mdss_fb_is_power_on(mfd) || !mfd->mdp.off_fnc || mdss_fb_is_power_on_lp(mfd))
+	if (!mdss_fb_is_power_on(mfd) || !mfd->mdp.off_fnc)
 		return 0;
 
 	cur_power_state = mfd->panel_power_state;
@@ -3128,10 +3123,6 @@ static int mdss_fb_open(struct fb_info *info, int user)
 
 	mfd->ref_cnt++;
 	pr_debug("mfd refcount:%d file:%pK\n", mfd->ref_cnt, info->file);
-
-#ifdef CONFIG_ARCH_MSM8998
-	fb_blank_powerdown(0);
-#endif
 
 	return 0;
 
@@ -5601,12 +5592,6 @@ void mdss_fb_report_panel_dead(struct msm_fb_data_type *mfd)
 	kobject_uevent_env(&mfd->fbi->dev->kobj,
 		KOBJ_CHANGE, envp);
 	pr_err("Panel has gone bad, sending uevent - %s\n", envp[0]);
-
-	/* Some HALs don't support resetting the framebuffer, so do it ourselves */
-	/* the UNBLANK will clear the panel_dead variable */
-	mdss_fb_blank_sub(FB_BLANK_UNBLANK, fbi_list[0], true);
-	mdss_fb_blank_sub(FB_BLANK_POWERDOWN, fbi_list[0], true);
-	mdss_fb_blank_sub(FB_BLANK_UNBLANK, fbi_list[0], true);
 }
 
 
@@ -5652,13 +5637,3 @@ void mdss_fb_idle_pc(struct msm_fb_data_type *mfd)
 		sysfs_notify(&mfd->fbi->dev->kobj, NULL, "idle_power_collapse");
 	}
 }
-
-void fb_blank_powerdown(int fb_index) {
-	if (fb_reset_needed) {
-		pr_err("Shutting down framebuffer %i", fb_index);
-		mdss_fb_blank_sub(FB_BLANK_UNBLANK, fbi_list[fb_index], true);
-		mdss_fb_blank_sub(FB_BLANK_POWERDOWN, fbi_list[fb_index], true);
-		fb_reset_needed = false;
-	};
-}
-EXPORT_SYMBOL(fb_blank_powerdown);
