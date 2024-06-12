@@ -36,21 +36,23 @@ void f2fs_set_inode_flags(struct inode *inode)
 	unsigned int flags = F2FS_I(inode)->i_flags;
 	unsigned int new_fl = 0;
 
-	if (flags & FS_SYNC_FL)
+	if (flags & F2FS_SYNC_FL)
 		new_fl |= S_SYNC;
-	if (flags & FS_APPEND_FL)
+	if (flags & F2FS_APPEND_FL)
 		new_fl |= S_APPEND;
-	if (flags & FS_IMMUTABLE_FL)
+	if (flags & F2FS_IMMUTABLE_FL)
 		new_fl |= S_IMMUTABLE;
-	if (flags & FS_NOATIME_FL)
+	if (flags & F2FS_NOATIME_FL)
 		new_fl |= S_NOATIME;
-	if (flags & FS_DIRSYNC_FL)
+	if (flags & F2FS_DIRSYNC_FL)
 		new_fl |= S_DIRSYNC;
 	if (f2fs_encrypted_inode(inode))
 		new_fl |= S_ENCRYPTED;
+	if (file_is_verity(inode))
+		new_fl |= S_VERITY;
 	inode_set_flags(inode, new_fl,
 			S_SYNC|S_APPEND|S_IMMUTABLE|S_NOATIME|S_DIRSYNC|
-			S_ENCRYPTED);
+			S_ENCRYPTED|S_VERITY);
 }
 
 static void __get_inode_rdev(struct inode *inode, struct f2fs_inode *ri)
@@ -344,7 +346,7 @@ static int do_read_inode(struct inode *inode)
 	if (!need_inode_block_update(sbi, inode->i_ino))
 		fi->last_disk_size = inode->i_size;
 
-	if (fi->i_flags & FS_PROJINHERIT_FL)
+	if (fi->i_flags & F2FS_PROJINHERIT_FL)
 		set_inode_flag(inode, FI_PROJ_INHERIT);
 
 	if (f2fs_has_extra_attr(inode) && f2fs_sb_has_project_quota(sbi->sb) &&
@@ -677,6 +679,7 @@ no_delete:
 	}
 out_clear:
 	fscrypt_put_encryption_info(inode);
+	fsverity_cleanup_inode(inode);
 	clear_inode(inode);
 }
 
